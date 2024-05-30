@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Resources:
+  DailyLoginFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: heart_refill.py.lambda_handler
+      Runtime: python3.9
+      CodeUri: hearts/
+      Timeout: 200
+      Environment:
+        Variables:
+          DB_HOST: '<db_host>'
+          DB_NAME: '<db_host>'
+          DB_USER: '<db_user>'
+          DB_PASSWORD: '<db_password>'
+          PORT: '<db_port>'
+          S3_BUCKET: '<bucket_name>'
+          FIREBASE_SERVICE_ACCOUNT_KEY: '<firebase_file>'
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Sid: RDSConnectPolicy
+              Effect: Allow
+              Action:
+                - 'rds-db:connect'
+              Resource: '<db_aws_arn>'
+        - Version: "2012-10-17"
+          Statement:
+            - Sid: AllowS3ObjectRead
+              Effect: Allow
+              Action:
+                - 's3:GetObject'
+              Resource: "<aws_s3_bucket_arn>"
+      VpcConfig:
+        SecurityGroupIds:   # Specify Security Group IDs associated with the Lambda function
+          - '<security_group_name>'
+        SubnetIds:          # Specify Subnet IDs within the VPC
+          - '<subnet-id>'
+          - '<subnet-id>'
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(00 16 * * ? *)' # Every day at 16 UTC
+
+  
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
